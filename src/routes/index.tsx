@@ -16,7 +16,37 @@ export const Route = createFileRoute("/")({
 });
 
 type Message = { from: "bot" | "user"; text: string };
-type Stage = "intro" | "welcome" | "username" | "when" | "attempts" | "linked" | "accountType" | "typing" | "analyzing" | "offer0" | "checkout" | "upsell1" | "upsell2" | "premium" | "done";
+type Stage = "intro" | "welcome" | "username" | "followup" | "typing" | "analyzing" | "offer0" | "checkout" | "upsell1" | "upsell2" | "premium" | "done";
+type FollowupQuestion = { prompt: string; options: string[] };
+
+const followupsByIssue: Record<string, FollowupQuestion[]> = {
+  "Minha conta foi desativada": [
+    { prompt: "Quando você tenta entrar, o que aparece?", options: ["Aviso de conta desativada", "Aviso de violação das diretrizes", "Não aparece uma mensagem clara", "Não consigo lembrar"] },
+    { prompt: "Você já solicitou uma revisão ou contestou a decisão pelo Instagram?", options: ["Sim, e foi recusada", "Sim, ainda está em análise", "Não, ainda não solicitei", "Não encontrei a opção"] },
+    { prompt: "Você ainda consegue acessar o e-mail ou telefone vinculado à conta?", options: ["Sim, os dois", "Apenas um deles", "Não tenho acesso", "Não tenho certeza"] },
+  ],
+  "Minha conta foi invadida": [
+    { prompt: "O que aconteceu depois que você percebeu a invasão?", options: ["Alteraram minha senha", "Alteraram meu e-mail ou telefone", "Publicaram conteúdo sem minha autorização", "Não sei exatamente o que foi alterado"] },
+    { prompt: "Você ainda consegue entrar na conta em algum dispositivo?", options: ["Sim, em um dispositivo", "Não, perdi totalmente o acesso", "Consigo entrar, mas não controlar a conta"] },
+    { prompt: "Você recebeu algum e-mail avisando sobre alterações na conta?", options: ["Sim, recebi", "Não recebi", "Não tenho mais acesso ao e-mail"] },
+    { prompt: "Você já iniciou a recuperação pelos canais oficiais do Instagram?", options: ["Sim, mas não consegui", "Sim, ainda estou aguardando", "Ainda não tentei"] },
+  ],
+  "Minha conta foi bloqueada": [
+    { prompt: "Qual situação descreve melhor o bloqueio?", options: ["Não consigo fazer login", "Minha conta está com recursos limitados", "Recebi um aviso de atividade suspeita", "A conta aparece como suspensa"] },
+    { prompt: "O Instagram informou algum motivo para o bloqueio?", options: ["Sim, informou o motivo", "Apenas mostrou um aviso genérico", "Não mostrou nenhuma explicação"] },
+    { prompt: "Você já tentou seguir as instruções ou pedir revisão no próprio Instagram?", options: ["Sim, sem sucesso", "Sim, está em análise", "Ainda não tentei"] },
+  ],
+  "Perdi o acesso à conta": [
+    { prompt: "Qual é a principal dificuldade para entrar?", options: ["Esqueci a senha", "Perdi acesso ao e-mail", "Perdi acesso ao telefone", "A autenticação em duas etapas está impedindo o acesso", "Outro problema"] },
+    { prompt: "Você ainda tem acesso a algum meio de contato vinculado à conta?", options: ["Sim, ao e-mail", "Sim, ao telefone", "Aos dois", "A nenhum deles", "Não tenho certeza"] },
+    { prompt: "Você já tentou redefinir a senha ou usar a opção de recuperar acesso?", options: ["Sim, mas não funcionou", "Sim, mas não recebi o código", "Ainda não tentei"] },
+  ],
+  "Quero recuperar fotos ou conversas": [
+    { prompt: "Que tipo de conteúdo você está tentando localizar?", options: ["Fotos e vídeos publicados", "Stories ou publicações arquivadas", "Conversas e mensagens", "Uma combinação desses conteúdos"] },
+    { prompt: "Você ainda consegue acessar sua conta?", options: ["Sim, consigo entrar", "Não, perdi o acesso", "A conta foi desativada ou removida"] },
+    { prompt: "Você já solicitou uma cópia das suas informações pelo Instagram?", options: ["Sim, já solicitei", "Tentei, mas não consegui", "Ainda não solicitei", "Não sabia que era possível"] },
+  ],
+};
 
 const issues = [
   "Minha conta foi desativada",
@@ -65,6 +95,8 @@ function Index() {
   const [stage, setStage] = useState<Stage>("intro");
   const [messages, setMessages] = useState<Message[]>([]);
   const [username, setUsername] = useState("");
+  const [followupQuestions, setFollowupQuestions] = useState<FollowupQuestion[]>([]);
+  const [followupIndex, setFollowupIndex] = useState(0);
   const [paymentNotice, setPaymentNotice] = useState(false);
   const [pendingReply, setPendingReply] = useState<{ text: string; nextStage: Stage } | null>(null);
 
@@ -105,23 +137,25 @@ function Index() {
   };
   const chooseIssue = (value: string) => {
     add("user", value);
-    askNext("Entendi. Obrigado por explicar. Vou fazer algumas perguntas para compreender melhor o cenário. Qual é o @ da conta? Não envie senha, códigos ou dados de autenticação.", "username");
+    setFollowupQuestions(followupsByIssue[value] ?? []);
+    setFollowupIndex(0);
+    askNext("Entendi. Vou seguir perguntas específicas para esse tipo de situação. Qual é o @ da conta? Não envie senha, códigos ou dados de autenticação.", "username");
   };
   const submitUsername = () => {
     if (!username.trim()) return;
     add("user", username.startsWith("@") ? username : `@${username}`);
-    askNext("Certo, obrigado. Há quanto tempo você está sem conseguir acessar a conta?", "when");
+    const firstQuestion = followupQuestions[0];
+    if (firstQuestion) askNext(firstQuestion.prompt, "followup");
+    else askNext("Obrigado. Vou organizar as informações que você compartilhou.", "analyzing");
   };
   const answerQuestion = (value: string) => {
     add("user", value);
-    if (stage === "when") {
-      askNext("Entendi. Você já tentou algum procedimento de recuperação pelo próprio Instagram?", "attempts");
-    } else if (stage === "attempts") {
-      askNext("Certo. Você ainda tem acesso ao e-mail ou telefone que estavam vinculados à conta? Não precisa informar o endereço ou número, apenas dizer se tem acesso.", "linked");
-    } else if (stage === "linked") {
-      askNext("Obrigado. Para eu entender o contexto, essa conta é pessoal, de criador de conteúdo ou de uma empresa?", "accountType");
-    } else if (stage === "accountType") {
-      askNext("Perfeito, obrigado por responder. Vou organizar suas informações para mostrar o que está incluído na análise inicial. Essa etapa leva alguns segundos.", "analyzing");
+    const nextIndex = followupIndex + 1;
+    if (nextIndex < followupQuestions.length) {
+      setFollowupIndex(nextIndex);
+      askNext(followupQuestions[nextIndex].prompt, "followup");
+    } else {
+      askNext("Perfeito, obrigado por responder. Vou organizar suas informações e apresentar os próximos passos possíveis para o seu cenário.", "analyzing");
     }
   };
   const showCheckout = (offerIndex: number) => {
@@ -144,6 +178,8 @@ function Index() {
     setStage("intro");
     setMessages([]);
     setUsername("");
+    setFollowupQuestions([]);
+    setFollowupIndex(0);
     setPaymentNotice(false);
     setPendingReply(null);
   };
@@ -230,13 +266,13 @@ function Index() {
                   <button onClick={submitUsername} disabled={!username.trim()} className="rounded-xl bg-primary px-4 text-primary-foreground disabled:opacity-40" aria-label="Enviar usuário"><Send size={18} /></button>
                 </div>
               )}
-              {(["when", "attempts", "linked", "accountType"] as Stage[]).includes(stage) && (
+              {stage === "followup" && followupQuestions[followupIndex] && (
                 <div className="rounded-2xl border bg-card p-4 shadow-sm">
-                  <div className="mb-3 flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wide text-primary">Triagem da sua conta</span><span className="text-xs text-muted-foreground">{stage === "when" ? "2 de 5" : stage === "attempts" ? "3 de 5" : stage === "linked" ? "4 de 5" : "5 de 5"}</span></div>
-                  <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 transition-all ${stage === "when" ? "w-2/5" : stage === "attempts" ? "w-3/5" : stage === "linked" ? "w-4/5" : "w-full"}`} /></div>
-                  <p className="mb-3 text-sm font-semibold text-foreground">{stage === "when" ? "Há quanto tempo você perdeu o acesso?" : stage === "attempts" ? "Você já tentou recuperar pelo Instagram?" : stage === "linked" ? "Ainda tem acesso ao contato vinculado?" : "Qual é o tipo da conta?"}</p>
+                  <div className="mb-3 flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wide text-primary">Perguntas do seu caso</span><span className="text-xs text-muted-foreground">{followupIndex + 1} de {followupQuestions.length}</span></div>
+                  <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 transition-all" style={{ width: `${((followupIndex + 1) / followupQuestions.length) * 100}%` }} /></div>
+                  <p className="mb-3 text-sm font-semibold text-foreground">{followupQuestions[followupIndex].prompt}</p>
                   <div className="space-y-2">
-                    {(stage === "when" ? ["Hoje ou ontem", "Há alguns dias", "Há algumas semanas", "Há meses ou mais"] : stage === "attempts" ? ["Sim, tentei e não consegui", "Sim, mas não concluí", "Ainda não tentei"] : stage === "linked" ? ["Sim, tenho acesso", "Tenho acesso a apenas um deles", "Não tenho mais acesso"] : ["Conta pessoal", "Criador de conteúdo", "Empresa ou negócio"]).map((option, index) => (
+                    {followupQuestions[followupIndex].options.map((option, index) => (
                       <button key={option} onClick={() => answerQuestion(option)} className="group flex w-full items-center gap-3 rounded-xl border border-border/80 bg-background px-3.5 py-3 text-left text-sm font-medium transition hover:border-primary hover:bg-primary/5">
                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">{String.fromCharCode(65 + index)}</span><span className="flex-1">{option}</span><ArrowRight size={15} className="text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
                       </button>
