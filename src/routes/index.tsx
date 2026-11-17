@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Instagram, MessageCircle, Send, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, Instagram, MessageCircle, Send, ShieldCheck, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -67,13 +67,11 @@ function Index() {
     { from: "bot", text: "Olá! 👋 Sou o assistente virtual da InstaRecovery. Vou entender o que aconteceu com sua conta e apresentar as opções de serviço disponíveis." },
     { from: "bot", text: "Para começar, me conta: qual situação você está enfrentando?" },
   ]);
-  const [issue, setIssue] = useState("");
   const [username, setUsername] = useState("");
   const [paymentNotice, setPaymentNotice] = useState(false);
 
   const add = (from: Message["from"], text: string) => setMessages((current) => [...current, { from, text }]);
   const chooseIssue = (value: string) => {
-    setIssue(value);
     add("user", value);
     add("bot", "Entendi. Obrigado por explicar. Qual é o @usuário da conta que precisa de ajuda? Não envie senha, códigos de login ou códigos de autenticação.");
     setStage("username");
@@ -107,7 +105,6 @@ function Index() {
       { from: "bot", text: "Olá! 👋 Sou o assistente virtual da InstaRecovery. Vou entender o que aconteceu com sua conta e apresentar as opções de serviço disponíveis." },
       { from: "bot", text: "Para começar, me conta: qual situação você está enfrentando?" },
     ]);
-    setIssue("");
     setUsername("");
     setPaymentNotice(false);
   };
