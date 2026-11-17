@@ -16,14 +16,13 @@ npm run dev
 ```
 
 
-## Consulta de perfis públicos do Instagram
+## Consulta gratuita de perfis públicos do Instagram
 
-A prévia do perfil usa um endpoint do servidor em `/api/profile` e o ator **Apify Instagram Profile Scraper**. O token fica somente no servidor; não coloque a chave em variáveis `VITE_*` nem no código do navegador.
+A prévia consulta a API pública da **InScrape** pelo endpoint `GET https://api.inscrape.dev/v1/instagram/profile?handle=USUARIO`. A API oferece 100 créditos iniciais gratuitos, sem cartão e sem expiração; a consulta de perfil custa aproximadamente 0,95 crédito. Confira os limites e condições atuais em [InScrape](https://inscrape.dev/).
 
-1. Crie uma conta na [Apify](https://apify.com/) e habilite o ator [Instagram Profile Scraper](https://apify.com/apify/instagram-profile-scraper).
-2. Copie o token em [Apify API & Integrations](https://console.apify.com/account/integrations).
-3. Configure `APIFY_API_TOKEN` como variável de ambiente/secret no ambiente de hospedagem (e no arquivo `.env` local para desenvolvimento).
-4. Opcionalmente, configure `APIFY_INSTAGRAM_ACTOR`; o padrão é `apify~instagram-profile-scraper`.
-5. Faça novo deploy para aplicar a variável no servidor.
+1. Crie sua conta gratuita em [inscrape.dev](https://inscrape.dev/).
+2. Gere/copiei sua chave de API no painel da InScrape.
+3. Configure a variável secreta `INSCRAPE_API_KEY` no ambiente de hospedagem.
+4. Faça novo deploy para aplicar a variável no servidor.
 
-O exemplo de configuração está em `.env.example`. Sem o token, a aplicação informa que a consulta ainda não foi ativada e não inventa dados. O provedor pode cobrar pelo uso; confira os preços e limites diretamente na Apify. Os resultados dependem da disponibilidade dos dados públicos e podem estar incompletos ou desatualizados. Esta integração não acessa contas privadas nem revela o status interno de uma conta.
+O exemplo de configuração está em `.env.example`. A chave nunca deve ser colocada em variáveis `VITE_*` ou no código do navegador. Sem a chave, o site informa que a consulta ainda não foi ativada e não inventa dados. A integração retorna apenas informações públicas; não acessa contas privadas, mensagens, senhas ou status interno de recuperação. O serviço é independente e não é afiliado ao Instagram/Meta.
