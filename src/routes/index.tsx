@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Check, CheckCircle2, Instagram, MessageCircle, Send, ShieldCheck, X } from "lucide-react";
 
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
 });
 
 type Message = { from: "bot" | "user"; text: string };
-type Stage = "welcome" | "issue" | "username" | "offer0" | "checkout" | "upsell1" | "upsell2" | "premium" | "done";
+type Stage = "welcome" | "username" | "when" | "attempts" | "linked" | "accountType" | "analyzing" | "offer0" | "checkout" | "upsell1" | "upsell2" | "premium" | "done";
 
 const issues = [
   "Minha conta foi desativada",
@@ -70,18 +70,43 @@ function Index() {
   const [username, setUsername] = useState("");
   const [paymentNotice, setPaymentNotice] = useState(false);
 
+  useEffect(() => {
+    if (stage !== "analyzing") return;
+    const timer = window.setTimeout(() => {
+      add("bot", "Pronto, organizei suas respostas. Pelo que você contou, o próximo passo é fazer uma análise inicial para identificar quais procedimentos podem ser aplicáveis ao seu caso.");
+      add("bot", "A etapa de diagnóstico custa R$ 9,90. Ela inclui a revisão das informações fornecidas, a identificação dos caminhos possíveis e a orientação dos primeiros passos. Você pode conferir o escopo antes de decidir.");
+      setStage("offer0");
+    }, 10000);
+    return () => window.clearTimeout(timer);
+  }, [stage]);
+
   const add = (from: Message["from"], text: string) => setMessages((current) => [...current, { from, text }]);
   const chooseIssue = (value: string) => {
     add("user", value);
-    add("bot", "Entendi. Imagino como isso pode ser frustrante, principalmente se você tinha fotos, contatos ou trabalho nesse perfil. Vamos por partes: qual é o @ da conta? Não envie senha nem códigos de acesso.");
+    add("bot", "Entendi. Vou fazer algumas perguntas rápidas para compreender melhor o cenário e evitar indicar um caminho que não tenha relação com o seu caso. Qual é o @ da conta? Não envie senha nem códigos.");
     setStage("username");
   };
   const submitUsername = () => {
     if (!username.trim()) return;
     add("user", username.startsWith("@") ? username : `@${username}`);
-    add("bot", "Obrigado por passar essas informações. O primeiro passo é entender melhor o tipo de problema e verificar quais alternativas podem ser tentadas. Vou te mostrar como funciona a etapa inicial.");
-    add("bot", "A etapa inicial custa R$ 9,90. Ela inclui a análise das informações que você forneceu, a identificação dos caminhos possíveis e a preparação dos primeiros passos aplicáveis. Veja exatamente o que está incluído antes de decidir.");
-    setStage("offer0");
+    add("bot", "Certo. Há quanto tempo você está sem conseguir acessar a conta?");
+    setStage("when");
+  };
+  const answerQuestion = (value: string) => {
+    add("user", value);
+    if (stage === "when") {
+      add("bot", "Você já tentou algum procedimento para recuperar o acesso pelo próprio Instagram?");
+      setStage("attempts");
+    } else if (stage === "attempts") {
+      add("bot", "Você ainda tem acesso ao e-mail ou telefone que estavam vinculados à conta? Não precisa informar o endereço ou número, apenas dizer se tem acesso.");
+      setStage("linked");
+    } else if (stage === "linked") {
+      add("bot", "Só mais uma: essa conta é pessoal, de criador de conteúdo ou de uma empresa?");
+      setStage("accountType");
+    } else if (stage === "accountType") {
+      add("bot", "Obrigado. Estou organizando o que você informou para apresentar a etapa adequada. Isso leva alguns segundos.");
+      setStage("analyzing");
+    }
   };
   const showCheckout = (offerIndex: number) => {
     add("user", `Quero contratar por ${offers[offerIndex].price}`);
@@ -169,12 +194,12 @@ function Index() {
             <div className="flex items-center justify-between bg-[#100d1b] px-4 py-4 text-white">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-600"><MessageCircle size={20} /></div>
-                <div><p className="font-bold">Atendimento InstaRecovery</p><p className="text-xs text-white/65">Assistente virtual · respondendo agora</p></div>
+                <div><p className="font-bold">Atendimento InstaRecovery</p><p className="text-xs text-white/65">Assistente virtual · triagem de recuperação</p></div>
               </div>
               <button onClick={resetChat} className="rounded-full p-2 transition hover:bg-white/15" aria-label="Fechar atendimento"><X size={20} /></button>
             </div>
             <div className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-4">
-              <div className="mx-auto w-fit rounded-full bg-background px-3 py-1 text-[10px] text-muted-foreground">Assistente virtual InstaRecovery • online</div>
+              <div className="mx-auto w-fit rounded-full bg-background px-3 py-1 text-[10px] text-muted-foreground">Assistente virtual InstaRecovery</div>
               {messages.map((message, index) => (
                 <div key={index} className={`flex ${message.from === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.from === "user" ? "rounded-br-sm bg-primary text-primary-foreground" : "rounded-bl-sm border bg-card"}`}>{message.text}</div>
@@ -189,6 +214,20 @@ function Index() {
                 <div className="flex gap-2">
                   <input value={username} onChange={(e) => setUsername(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitUsername()} placeholder="@seuusuario" className="min-w-0 flex-1 rounded-xl border bg-background px-4 py-3 text-sm outline-none focus:border-primary" />
                   <button onClick={submitUsername} disabled={!username.trim()} className="rounded-xl bg-primary px-4 text-primary-foreground disabled:opacity-40" aria-label="Enviar usuário"><Send size={18} /></button>
+                </div>
+              )}
+              {(["when", "attempts", "linked", "accountType"] as Stage[]).includes(stage) && (
+                <div className="space-y-2">
+                  {(stage === "when" ? ["Hoje ou ontem", "Há alguns dias", "Há algumas semanas", "Há meses ou mais"] : stage === "attempts" ? ["Sim, tentei e não consegui", "Sim, mas não concluí", "Ainda não tentei"] : stage === "linked" ? ["Sim, tenho acesso", "Tenho acesso a apenas um deles", "Não tenho mais acesso"] : ["Conta pessoal", "Criador de conteúdo", "Empresa ou negócio"]).map((option) => (
+                    <button key={option} onClick={() => answerQuestion(option)} className="block w-full rounded-xl border bg-card px-4 py-3 text-left text-sm font-medium transition hover:border-primary hover:bg-primary/5">{option}<ArrowRight size={15} className="float-right mt-0.5 text-primary" /></button>
+                  ))}
+                </div>
+              )}
+              {stage === "analyzing" && (
+                <div className="rounded-2xl border bg-card p-4">
+                  <div className="flex items-center gap-2 font-semibold"><span className="h-2 w-2 animate-pulse rounded-full bg-fuchsia-500" /> Organizando suas respostas...</div>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">Estamos reunindo as informações da triagem para mostrar o escopo da análise inicial. Esta etapa pode levar até 10 segundos.</p>
+                  <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full w-2/3 animate-pulse rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500" /></div>
                 </div>
               )}
               {stage === "offer0" && (
