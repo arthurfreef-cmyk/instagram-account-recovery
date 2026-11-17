@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
 });
 
 type Message = { from: "bot" | "user"; text: string };
-type Stage = "intro" | "welcome" | "username" | "profilePreview" | "followup" | "typing" | "analyzing" | "offer0" | "checkout" | "upsell1" | "upsell2" | "premium" | "done";
+type Stage = "intro" | "welcome" | "username" | "profilePreview" | "followup" | "typing" | "analyzing" | "offer0" | "serviceDetails" | "checkout" | "upsell1" | "upsell2" | "premium" | "done";
 type FollowupQuestion = { prompt: string; options: string[] };
 
 const followupsByIssue: Record<string, FollowupQuestion[]> = {
@@ -93,6 +93,7 @@ function Index() {
   const [followupQuestions, setFollowupQuestions] = useState<FollowupQuestion[]>([]);
   const [followupIndex, setFollowupIndex] = useState(0);
   const [paymentNotice, setPaymentNotice] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState<number | null>(null);
   const [pendingReply, setPendingReply] = useState<{ text: string; nextStage: Stage } | null>(null);
 
   const add = (from: Message["from"], text: string) => setMessages((current) => [...current, { from, text }]);
@@ -158,6 +159,16 @@ function Index() {
       askNext("Perfeito, obrigado por responder. Vou organizar suas informações e apresentar os próximos passos possíveis para o seu cenário.", "analyzing");
     }
   };
+  const showServiceDetails = (offerIndex: number) => {
+    setSelectedOffer(offerIndex);
+    setStage("serviceDetails");
+    add("user", `Quero ver detalhes do serviço: ${offers[offerIndex].title}`);
+    add("bot", `Claro! Vou explicar o que está incluído em ${offers[offerIndex].title} antes de você decidir.`);
+  };
+  const continueToCheckout = () => {
+    if (selectedOffer === null) return;
+    showCheckout(selectedOffer);
+  };
   const showCheckout = (offerIndex: number) => {
     add("user", `Quero contratar por ${offers[offerIndex].price}`);
     add("bot", "O checkout Pix precisa estar conectado à plataforma de pagamento para gerar uma cobrança individual e confirmar o pagamento. No momento, essa integração ainda não está configurada neste projeto.");
@@ -182,6 +193,7 @@ function Index() {
     setFollowupQuestions([]);
     setFollowupIndex(0);
     setPaymentNotice(false);
+    setSelectedOffer(null);
     setPendingReply(null);
   };
 
@@ -312,8 +324,33 @@ function Index() {
                     <p className="font-bold text-emerald-700">Diagnóstico gratuito concluído</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">A triagem não tem custo. Escolha abaixo o serviço que deseja contratar.</p>
                   </div>
-                  <OfferCard offer={offers[0]} onChoose={() => showCheckout(0)} />
-                  <OfferCard offer={offers[1]} onChoose={() => showCheckout(1)} />
+                  <OfferCard offer={offers[0]} onChoose={() => showServiceDetails(0)} />
+                  <OfferCard offer={offers[1]} onChoose={() => showServiceDetails(1)} />
+                </div>
+              )}
+              {stage === "serviceDetails" && selectedOffer !== null && (
+                <div className="rounded-2xl border bg-card p-5 shadow-sm">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary"><ShieldCheck size={15} /> Detalhes e instruções</div>
+                  <h3 className="mt-3 text-lg font-extrabold">{offers[selectedOffer].title}</h3>
+                  <p className="mt-1 text-3xl font-black">{offers[selectedOffer].price}</p>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{offers[selectedOffer].description}</p>
+                  <div className="mt-4 rounded-xl bg-muted/50 p-3">
+                    <p className="text-sm font-bold">O que está incluído</p>
+                    <ul className="mt-2 space-y-2">
+                      {(selectedOffer === 0
+                        ? ["Revisão das respostas da triagem gratuita", "Orientação passo a passo para usar os canais oficiais de recuperação", "Instruções para acompanhar solicitações e proteger os meios de contato"]
+                        : ["Todos os itens do serviço de recuperação", "Orientação para criar uma senha forte e exclusiva", "Configuração e revisão da autenticação em duas etapas", "Revisão de e-mail, telefone, sessões ativas e dispositivos conectados", "Recomendações para reduzir o risco de novas invasões e perda de acesso"]
+                      ).map((item) => <li key={item} className="flex gap-2 text-xs leading-5"><Check size={14} className="mt-0.5 shrink-0 text-primary" />{item}</li>)}
+                    </ul>
+                  </div>
+                  {selectedOffer === 1 && (
+                    <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs leading-5 text-muted-foreground">Importante: a blindagem reforça a segurança, mas não pode garantir que a conta nunca será suspensa, bloqueada ou invadida novamente. Decisões de suspensão são do Instagram, e nenhum serviço externo controla isso. O serviço não solicita sua senha nem códigos de autenticação.</p>
+                  )}
+                  {selectedOffer === 0 && (
+                    <p className="mt-3 text-xs leading-5 text-muted-foreground">Este plano não inclui a revisão adicional de segurança oferecida no pacote com blindagem. A recuperação depende dos procedimentos e decisões do Instagram.</p>
+                  )}
+                  <button onClick={continueToCheckout} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3 text-sm font-extrabold text-white">Continuar para contratação <ArrowRight size={16} /></button>
+                  <button onClick={() => setStage("offer0")} className="mt-2 w-full rounded-xl border px-4 py-3 text-sm font-semibold">Voltar às opções</button>
                 </div>
               )}
               {stage === "checkout" && (
@@ -326,7 +363,7 @@ function Index() {
               )}
               {(stage === "upsell1" || stage === "upsell2") && (
                 <div className="space-y-3">
-                  <OfferCard offer={offers[stage === "upsell1" ? 1 : 2]} onChoose={() => showCheckout(stage === "upsell1" ? 1 : 2)} />
+                  <OfferCard offer={offers[stage === "upsell1" ? 1 : 2]} onChoose={() => showServiceDetails(stage === "upsell1" ? 1 : 0)} />
                   <button onClick={() => stage === "upsell1" ? nextUpsell(2) : openPremium()} className="w-full rounded-xl border bg-card px-4 py-3 text-sm font-semibold">Continuar sem este serviço <ArrowRight className="ml-1 inline" size={15} /></button>
                 </div>
               )}
@@ -359,7 +396,7 @@ function OfferCard({ offer, onChoose }: { offer: typeof offers[number]; onChoose
       <p className="mt-2 text-3xl font-extrabold">{offer.price}</p>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{offer.description}</p>
       <ul className="mt-4 space-y-2">{offer.bullets.map((item) => <li key={item} className="flex gap-2 text-xs leading-5"><Check size={14} className="mt-0.5 shrink-0 text-primary" />{item}</li>)}</ul>
-      <button onClick={onChoose} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-4 text-sm font-extrabold text-white shadow-lg shadow-fuchsia-900/20 transition hover:-translate-y-0.5 hover:brightness-110">Escolher este serviço <ArrowRight size={16} /></button>
+      <button onClick={onChoose} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-4 text-sm font-extrabold text-white shadow-lg shadow-fuchsia-900/20 transition hover:-translate-y-0.5 hover:brightness-110">Ver detalhes e instruções <ArrowRight size={16} /></button>
     </div>
   );
 }
