@@ -81,68 +81,60 @@ export const Route = createFileRoute("/api/profile")({
 
         const cached = lookupCache.get(username.toLowerCase());
         if (cached && cached.expiresAt > now) {
-          return Response.json({ profile: cached.profile, source: "Apify", cached: true }, {
+          return Response.json({ profile: cached.profile, source: "InScrape", cached: true }, {
             headers: { "Cache-Control": "private, max-age=60" },
           });
         }
 
-        const token = process.env.APIFY_API_TOKEN;
+        const token = process.env.INSCRAPE_API_KEY;
         if (!token) {
           return Response.json({
-            error: "A consulta de perfis ainda não foi ativada. O administrador precisa configurar a chave da Apify no servidor.",
+            error: "A consulta gratuita ainda não foi ativada. O administrador precisa configurar a chave da InScrape no servidor.",
             code: "PROFILE_LOOKUP_NOT_CONFIGURED",
           }, { status: 503 });
         }
 
-        const actor = process.env.APIFY_INSTAGRAM_ACTOR || "apify~instagram-profile-scraper";
-        if (!/^[a-zA-Z0-9_-]+~[a-zA-Z0-9_-]+$/.test(actor)) {
-          return Response.json({ error: "O provedor de consulta está configurado incorretamente." }, { status: 500 });
-        }
-
-        try {
-          const endpoint = new URL(`https://api.apify.com/v2/acts/${actor}/run-sync-get-dataset-items`);
-          endpoint.searchParams.set("token", token);
+                try {
+          const endpoint = new URL("https://api.inscrape.dev/v1/instagram/profile");
+          endpoint.searchParams.set("handle", username);
           const upstream = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify({ usernames: [username], resultsLimit: 1 }),
-            signal: AbortSignal.timeout(45000),
+            method: "GET",
+            headers: { "x-api-key": token, "Accept": "application/json" },
+            signal: AbortSignal.timeout(30000),
           });
 
           if (!upstream.ok) {
             return Response.json({
               error: upstream.status === 401 || upstream.status === 403
-                ? "A chave do provedor foi recusada. Verifique a configuração da Apify."
-                : "O provedor não conseguiu consultar o perfil neste momento. Tente novamente mais tarde.",
+                ? "A chave da InScrape foi recusada. Confira se a chave gratuita foi copiada corretamente."
+                : "A InScrape não conseguiu consultar o perfil neste momento. Tente novamente mais tarde.",
             }, { status: upstream.status === 404 ? 404 : 502 });
           }
 
-          const items: unknown = await upstream.json();
-          const first = Array.isArray(items) ? items[0] : items;
-          if (!first || typeof first !== "object") {
-            return Response.json({ error: "Nenhum dado público foi retornado para esse usuário." }, { status: 404 });
+          const payload: unknown = await upstream.json();
+          if (!payload || typeof payload !== "object") {
+            return Response.json({ error: "A InScrape retornou uma resposta inválida." }, { status: 502 });
           }
-
-          const item = first as UnknownRecord;
-          const profile = item.profile && typeof item.profile === "object"
-            ? item.profile as UnknownRecord
-            : item;
-          const returnedUsername = asString(firstValue(profile, ["username", "userName", "handle"]));
+          const profile = payload as UnknownRecord;
+          const returnedUsername = asString(firstValue(profile, ["handle", "username"]));
           const profilePicUrl = safeHttpsUrl(firstValue(profile, [
-            "profilePicUrlHD", "profile_pic_url_hd", "profilePicUrl", "profile_pic_url", "profilePictureUrl", "avatar",
+            "profile_pic_url", "profile_pic_url_hd", "profile_picture_url", "avatar",
           ]));
           const normalized = {
             username: returnedUsername || username,
-            fullName: asString(firstValue(profile, ["fullName", "full_name", "name", "fullNameText"])),
-            biography: asString(firstValue(profile, ["biography", "bio", "biographyText"])),
+            fullName: asString(firstValue(profile, ["full_name", "fullName", "name"])),
+            biography: asString(firstValue(profile, ["biography", "bio"])),
             profilePicUrl,
-            followers: asCount(firstValue(profile, ["followersCount", "followers", "followerCount", "edge_followed_by_count"])),
-            following: asCount(firstValue(profile, ["followsCount", "following", "followingCount", "edge_follow_count"])),
-            posts: asCount(firstValue(profile, ["postsCount", "posts", "mediaCount", "media_count", "edge_owner_to_timeline_media_count"])),
-            verified: asBoolean(firstValue(profile, ["verified", "isVerified", "is_verified"])),
-            isPrivate: asBoolean(firstValue(profile, ["private", "isPrivate", "is_private"])),
-            externalUrl: safeHttpsUrl(firstValue(profile, ["externalUrl", "external_url", "website"])),
+            followers: asCount(firstValue(profile, ["follower_count", "followers_count", "followers"])),
+            following: asCount(firstValue(profile, ["following_count", "follows_count", "following"])),
+            posts: asCount(firstValue(profile, ["media_count", "posts_count", "posts"])),
+            verified: asBoolean(firstValue(profile, ["is_verified", "verified"])),
+            isPrivate: asBoolean(firstValue(profile, ["is_private", "private"])),
+            externalUrl: safeHttpsUrl(firstValue(profile, ["external_url", "website"])),
           };
+          if (!returnedUsername && !profile.full_name && !profile.profile_pic_url) {
+            return Response.json({ error: "Nenhum dado público foi retornado para esse usuário." }, { status: 404 });
+          }
 
           lookupCache.set(username.toLowerCase(), { profile: normalized, expiresAt: now + 10 * 60 * 1000 });
           return Response.json({ profile: normalized, source: "Apify", cached: false }, {
