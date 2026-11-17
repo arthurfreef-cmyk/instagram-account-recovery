@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
 });
 
 type Message = { from: "bot" | "user"; text: string };
-type Stage = "welcome" | "username" | "when" | "attempts" | "linked" | "accountType" | "analyzing" | "offer0" | "checkout" | "upsell1" | "upsell2" | "premium" | "done";
+type Stage = "intro" | "welcome" | "username" | "when" | "attempts" | "linked" | "accountType" | "typing" | "analyzing" | "offer0" | "checkout" | "upsell1" | "upsell2" | "premium" | "done";
 
 const issues = [
   "Minha conta foi desativada",
@@ -62,50 +62,66 @@ const premiumOffers = [
 
 function Index() {
   const [chatOpen, setChatOpen] = useState(false);
-  const [stage, setStage] = useState<Stage>("welcome");
-  const [messages, setMessages] = useState<Message[]>([
-    { from: "bot", text: "Oi! Seja bem-vindo(a) à InstaRecovery. 👋 Sou o assistente virtual e vou orientar você no processo para tentar recuperar sua conta. Primeiro, quero entender o que aconteceu para indicar o caminho mais adequado." },
-    { from: "bot", text: "Para eu te orientar melhor: o que aconteceu com sua conta?" },
-  ]);
+  const [stage, setStage] = useState<Stage>("intro");
+  const [messages, setMessages] = useState<Message[]>([]);
   const [username, setUsername] = useState("");
   const [paymentNotice, setPaymentNotice] = useState(false);
+  const [pendingReply, setPendingReply] = useState<{ text: string; nextStage: Stage } | null>(null);
+
+  const add = (from: Message["from"], text: string) => setMessages((current) => [...current, { from, text }]);
+
+  useEffect(() => {
+    if (!chatOpen || stage !== "intro") return;
+    const timer = window.setTimeout(() => {
+      add("bot", "Olá! Seja bem-vindo(a) à InstaRecovery. 👋 Sou o assistente virtual da equipe e vou acompanhar sua triagem por aqui.");
+      add("bot", "Para começar, me conta: o que aconteceu com sua conta?");
+      setStage("welcome");
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [chatOpen, stage]);
+
+  useEffect(() => {
+    if (!pendingReply) return;
+    const timer = window.setTimeout(() => {
+      add("bot", pendingReply.text);
+      setStage(pendingReply.nextStage);
+      setPendingReply(null);
+    }, 850);
+    return () => window.clearTimeout(timer);
+  }, [pendingReply]);
 
   useEffect(() => {
     if (stage !== "analyzing") return;
     const timer = window.setTimeout(() => {
-      add("bot", "Pronto, organizei suas respostas. Pelo que você contou, o próximo passo é fazer uma análise inicial para identificar quais procedimentos podem ser aplicáveis ao seu caso.");
-      add("bot", "A etapa de diagnóstico custa R$ 9,90. Ela inclui a revisão das informações fornecidas, a identificação dos caminhos possíveis e a orientação dos primeiros passos. Você pode conferir o escopo antes de decidir.");
+      add("bot", "Concluí a organização inicial das suas respostas. Pelo que você contou, o próximo passo é uma análise para identificar quais procedimentos podem ser aplicáveis ao seu caso.");
+      add("bot", "O diagnóstico inicial custa R$ 9,90. Ele inclui a revisão das informações fornecidas, a identificação dos caminhos possíveis e a orientação dos primeiros passos. Confira o escopo antes de decidir.");
       setStage("offer0");
     }, 10000);
     return () => window.clearTimeout(timer);
   }, [stage]);
-
-  const add = (from: Message["from"], text: string) => setMessages((current) => [...current, { from, text }]);
+  const askNext = (text: string, nextStage: Stage) => {
+    setStage("typing");
+    setPendingReply({ text, nextStage });
+  };
   const chooseIssue = (value: string) => {
     add("user", value);
-    add("bot", "Entendi. Vou fazer algumas perguntas rápidas para compreender melhor o cenário e evitar indicar um caminho que não tenha relação com o seu caso. Qual é o @ da conta? Não envie senha nem códigos.");
-    setStage("username");
+    askNext("Entendi. Obrigado por explicar. Vou fazer algumas perguntas para compreender melhor o cenário. Qual é o @ da conta? Não envie senha, códigos ou dados de autenticação.", "username");
   };
   const submitUsername = () => {
     if (!username.trim()) return;
     add("user", username.startsWith("@") ? username : `@${username}`);
-    add("bot", "Certo. Há quanto tempo você está sem conseguir acessar a conta?");
-    setStage("when");
+    askNext("Certo, obrigado. Há quanto tempo você está sem conseguir acessar a conta?", "when");
   };
   const answerQuestion = (value: string) => {
     add("user", value);
     if (stage === "when") {
-      add("bot", "Você já tentou algum procedimento para recuperar o acesso pelo próprio Instagram?");
-      setStage("attempts");
+      askNext("Entendi. Você já tentou algum procedimento de recuperação pelo próprio Instagram?", "attempts");
     } else if (stage === "attempts") {
-      add("bot", "Você ainda tem acesso ao e-mail ou telefone que estavam vinculados à conta? Não precisa informar o endereço ou número, apenas dizer se tem acesso.");
-      setStage("linked");
+      askNext("Certo. Você ainda tem acesso ao e-mail ou telefone que estavam vinculados à conta? Não precisa informar o endereço ou número, apenas dizer se tem acesso.", "linked");
     } else if (stage === "linked") {
-      add("bot", "Só mais uma: essa conta é pessoal, de criador de conteúdo ou de uma empresa?");
-      setStage("accountType");
+      askNext("Obrigado. Para eu entender o contexto, essa conta é pessoal, de criador de conteúdo ou de uma empresa?", "accountType");
     } else if (stage === "accountType") {
-      add("bot", "Obrigado. Estou organizando o que você informou para apresentar a etapa adequada. Isso leva alguns segundos.");
-      setStage("analyzing");
+      askNext("Perfeito, obrigado por responder. Vou organizar suas informações para mostrar o que está incluído na análise inicial. Essa etapa leva alguns segundos.", "analyzing");
     }
   };
   const showCheckout = (offerIndex: number) => {
@@ -125,13 +141,11 @@ function Index() {
   };
   const resetChat = () => {
     setChatOpen(false);
-    setStage("welcome");
-    setMessages([
-      { from: "bot", text: "Olá! 👋 Sou o assistente virtual da InstaRecovery. Vou entender o que aconteceu e orientar você nos passos para buscar a recuperação da sua conta." },
-      { from: "bot", text: "Para começar, me conta: qual situação você está enfrentando?" },
-    ]);
+    setStage("intro");
+    setMessages([]);
     setUsername("");
     setPaymentNotice(false);
+    setPendingReply(null);
   };
 
   return (
@@ -153,7 +167,7 @@ function Index() {
           <span className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/30 bg-fuchsia-400/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-fuchsia-200"><Instagram size={14} /> Atendimento para contas com problemas de acesso</span>
           <h1 className="mt-7 text-4xl font-black leading-[1.08] tracking-tight md:text-7xl">Recupere sua conta do Instagram <span className="text-fuchsia-300">com a ajuda da InstaRecovery.</span></h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/80 md:text-xl">Perder o acesso à sua conta não precisa ser o fim. Se você foi bloqueado, invadido ou perdeu o acesso, a InstaRecovery vai analisar seu caso e conduzir você pelos procedimentos adequados para buscar a recuperação do perfil.</p>
-          <button onClick={() => setChatOpen(true)} className="mt-9 inline-flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-9 py-4 text-base font-extrabold text-white shadow-xl shadow-fuchsia-950/40 transition hover:-translate-y-1 hover:brightness-110 sm:w-auto">
+          <button onClick={() => { setMessages([]); setStage("intro"); setPendingReply(null); setChatOpen(true); }} className="mt-9 inline-flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-9 py-4 text-base font-extrabold text-white shadow-xl shadow-fuchsia-950/40 transition hover:-translate-y-1 hover:brightness-110 sm:w-auto">
             <MessageCircle size={20} /> COMEÇAR MINHA RECUPERAÇÃO
           </button>
           <p className="mt-5 text-xs text-white/60">Responda algumas perguntas • Veja as opções para o seu caso</p>
@@ -217,11 +231,21 @@ function Index() {
                 </div>
               )}
               {(["when", "attempts", "linked", "accountType"] as Stage[]).includes(stage) && (
-                <div className="space-y-2">
-                  {(stage === "when" ? ["Hoje ou ontem", "Há alguns dias", "Há algumas semanas", "Há meses ou mais"] : stage === "attempts" ? ["Sim, tentei e não consegui", "Sim, mas não concluí", "Ainda não tentei"] : stage === "linked" ? ["Sim, tenho acesso", "Tenho acesso a apenas um deles", "Não tenho mais acesso"] : ["Conta pessoal", "Criador de conteúdo", "Empresa ou negócio"]).map((option) => (
-                    <button key={option} onClick={() => answerQuestion(option)} className="block w-full rounded-xl border bg-card px-4 py-3 text-left text-sm font-medium transition hover:border-primary hover:bg-primary/5">{option}<ArrowRight size={15} className="float-right mt-0.5 text-primary" /></button>
-                  ))}
+                <div className="rounded-2xl border bg-card p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wide text-primary">Triagem da sua conta</span><span className="text-xs text-muted-foreground">{stage === "when" ? "2 de 5" : stage === "attempts" ? "3 de 5" : stage === "linked" ? "4 de 5" : "5 de 5"}</span></div>
+                  <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 transition-all ${stage === "when" ? "w-2/5" : stage === "attempts" ? "w-3/5" : stage === "linked" ? "w-4/5" : "w-full"}`} /></div>
+                  <p className="mb-3 text-sm font-semibold text-foreground">{stage === "when" ? "Há quanto tempo você perdeu o acesso?" : stage === "attempts" ? "Você já tentou recuperar pelo Instagram?" : stage === "linked" ? "Ainda tem acesso ao contato vinculado?" : "Qual é o tipo da conta?"}</p>
+                  <div className="space-y-2">
+                    {(stage === "when" ? ["Hoje ou ontem", "Há alguns dias", "Há algumas semanas", "Há meses ou mais"] : stage === "attempts" ? ["Sim, tentei e não consegui", "Sim, mas não concluí", "Ainda não tentei"] : stage === "linked" ? ["Sim, tenho acesso", "Tenho acesso a apenas um deles", "Não tenho mais acesso"] : ["Conta pessoal", "Criador de conteúdo", "Empresa ou negócio"]).map((option, index) => (
+                      <button key={option} onClick={() => answerQuestion(option)} className="group flex w-full items-center gap-3 rounded-xl border border-border/80 bg-background px-3.5 py-3 text-left text-sm font-medium transition hover:border-primary hover:bg-primary/5">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">{String.fromCharCode(65 + index)}</span><span className="flex-1">{option}</span><ArrowRight size={15} className="text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
+              {stage === "typing" && (
+                <div className="flex justify-start"><div className="rounded-2xl rounded-bl-sm border bg-card px-4 py-3 text-xs text-muted-foreground"><span className="mr-2 inline-flex gap-1 align-middle"><i className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary" /><i className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:120ms]" /><i className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:240ms]" /></span>Digitando uma resposta...</div></div>
               )}
               {stage === "analyzing" && (
                 <div className="rounded-2xl border bg-card p-4">
