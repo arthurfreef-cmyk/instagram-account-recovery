@@ -314,10 +314,49 @@ function Index() {
                 </div>
               )}
               {stage === "username" && (
-                <div className="flex gap-2">
-                  <input value={username} onChange={(e) => setUsername(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitUsername()} placeholder="@seuusuario" className="min-w-0 flex-1 rounded-xl border bg-background px-4 py-3 text-sm outline-none focus:border-primary" />
-                  <button onClick={submitUsername} disabled={!username.trim()} className="rounded-xl bg-primary px-4 text-primary-foreground disabled:opacity-40" aria-label="Enviar usuário"><Send size={18} /></button>
-                </div>
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void submitUsername();
+                  }}
+                  className="space-y-2 rounded-2xl border bg-card p-3"
+                >
+                  <label htmlFor="instagram-username" className="block text-sm font-semibold text-foreground">
+                    Qual é o @ da sua conta?
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="flex min-w-0 flex-1 items-center rounded-xl border bg-background px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                      <span className="select-none text-sm text-muted-foreground">@</span>
+                      <input
+                        id="instagram-username"
+                        name="instagram-username"
+                        type="text"
+                        inputMode="text"
+                        autoComplete="username"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        autoFocus
+                        value={username.replace(/^@/, "")}
+                        onChange={(event) => setUsername(event.target.value.replace(/^@/, "").replace(/[^a-zA-Z0-9._]/g, "").slice(0, 30))}
+                        placeholder="seuusuario"
+                        aria-label="Nome de usuário do Instagram"
+                        className="min-w-0 flex-1 bg-transparent px-2 py-3 text-base text-foreground outline-none placeholder:text-muted-foreground/70"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!username.trim() || profileLoading}
+                      className="flex shrink-0 items-center justify-center rounded-xl bg-primary px-4 text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Consultar perfil"
+                    >
+                      <Send size={18} />
+                    </button>
+                  </div>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    Digite apenas seu nome de usuário, sem senha ou códigos. Exemplo: <span className="font-semibold text-foreground">@seuusuario</span>
+                  </p>
+                </form>
               )}
               {stage === "profilePreview" && profileUsername && (
                 <div className="rounded-2xl border bg-card p-4 shadow-sm">
