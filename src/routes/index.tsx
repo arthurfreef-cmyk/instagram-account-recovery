@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
 });
 
 type Message = { from: "bot" | "user"; text: string };
-type Stage = "intro" | "welcome" | "username" | "followup" | "typing" | "analyzing" | "offer0" | "checkout" | "upsell1" | "upsell2" | "premium" | "done";
+type Stage = "intro" | "welcome" | "username" | "profilePreview" | "followup" | "typing" | "analyzing" | "offer0" | "checkout" | "upsell1" | "upsell2" | "premium" | "done";
 type FollowupQuestion = { prompt: string; options: string[] };
 
 const followupsByIssue: Record<string, FollowupQuestion[]> = {
@@ -58,22 +58,16 @@ const issues = [
 
 const offers = [
   {
-    title: "Diagnóstico e início do processo",
+    title: "Recuperação da conta — sem blindagem",
     price: "R$ 9,90",
-    description: "Análise inicial do relato, identificação do tipo de problema e preparação dos primeiros passos aplicáveis ao seu caso.",
-    bullets: ["Triagem do problema informado", "Identificação das opções de recuperação", "Orientação inicial personalizada"],
+    description: "Assistência para organizar o caso e orientar os procedimentos oficiais adequados para tentar recuperar o acesso à conta.",
+    bullets: ["Orientação conforme o problema relatado", "Passo a passo dos canais oficiais de recuperação", "Sem o pacote adicional de segurança"],
   },
   {
-    title: "Recuperação avançada e segurança",
+    title: "Recuperação da conta + blindagem",
     price: "R$ 37,90",
-    description: "Uma etapa adicional de assistência para organizar o caso e preparar as solicitações e medidas de segurança cabíveis.",
-    bullets: ["Análise mais detalhada do caso", "Preparação das informações para contestação", "Revisão de medidas de segurança"],
-  },
-  {
-    title: "Recuperação de fotos e conteúdos",
-    price: "R$ 19,90",
-    description: "Assistência para localizar conteúdos disponíveis e orientar solicitações de cópia dos dados da conta.",
-    bullets: ["Orientação para solicitar seus dados", "Verificação de opções para fotos e vídeos", "Ajuda para localizar conteúdos arquivados"],
+    description: "Inclui a assistência de recuperação e uma etapa adicional de configuração e revisão de segurança para reduzir riscos de novas invasões e perdas de acesso.",
+    bullets: ["Tudo que está incluído na recuperação", "Revisão de senha e autenticação em duas etapas", "Orientação para proteger e-mail e dispositivos"],
   },
 ];
 
@@ -95,6 +89,7 @@ function Index() {
   const [stage, setStage] = useState<Stage>("intro");
   const [messages, setMessages] = useState<Message[]>([]);
   const [username, setUsername] = useState("");
+  const [profileUsername, setProfileUsername] = useState("");
   const [followupQuestions, setFollowupQuestions] = useState<FollowupQuestion[]>([]);
   const [followupIndex, setFollowupIndex] = useState(0);
   const [paymentNotice, setPaymentNotice] = useState(false);
@@ -125,10 +120,10 @@ function Index() {
   useEffect(() => {
     if (stage !== "analyzing") return;
     const timer = window.setTimeout(() => {
-      add("bot", "Concluí a organização inicial das suas respostas. Pelo que você contou, o próximo passo é uma análise para identificar quais procedimentos podem ser aplicáveis ao seu caso.");
-      add("bot", "O diagnóstico inicial custa R$ 9,90. Ele inclui a revisão das informações fornecidas, a identificação dos caminhos possíveis e a orientação dos primeiros passos. Confira o escopo antes de decidir.");
+      add("bot", "Pronto! Sua triagem gratuita foi concluída. Com base apenas nas respostas que você informou, organizamos os caminhos que podem ser avaliados para o seu caso.");
+      add("bot", "Você pode escolher entre a assistência de recuperação por R$ 9,90 ou a opção com uma etapa adicional de segurança por R$ 37,90. A recuperação depende da análise e das decisões do Instagram; nenhum serviço externo pode garanti-la.");
       setStage("offer0");
-    }, 10000);
+    }, 2500);
     return () => window.clearTimeout(timer);
   }, [stage]);
   const askNext = (text: string, nextStage: Stage) => {
@@ -142,8 +137,13 @@ function Index() {
     askNext("Entendi. Vou seguir perguntas específicas para esse tipo de situação. Qual é o @ da conta? Não envie senha, códigos ou dados de autenticação.", "username");
   };
   const submitUsername = () => {
-    if (!username.trim()) return;
-    add("user", username.startsWith("@") ? username : `@${username}`);
+    const normalized = username.trim().replace(/^@/, "");
+    if (!/^[a-zA-Z0-9._]{1,30}$/.test(normalized)) return;
+    setProfileUsername(normalized);
+    add("user", `@${normalized}`);
+    askNext("Encontrei o endereço público do perfil. Confira se este é o perfil correto antes de continuarmos.", "profilePreview");
+  };
+  const continueFromProfile = () => {
     const firstQuestion = followupQuestions[0];
     if (firstQuestion) askNext(firstQuestion.prompt, "followup");
     else askNext("Obrigado. Vou organizar as informações que você compartilhou.", "analyzing");
@@ -178,6 +178,7 @@ function Index() {
     setStage("intro");
     setMessages([]);
     setUsername("");
+    setProfileUsername("");
     setFollowupQuestions([]);
     setFollowupIndex(0);
     setPaymentNotice(false);
@@ -266,6 +267,21 @@ function Index() {
                   <button onClick={submitUsername} disabled={!username.trim()} className="rounded-xl bg-primary px-4 text-primary-foreground disabled:opacity-40" aria-label="Enviar usuário"><Send size={18} /></button>
                 </div>
               )}
+              {stage === "profilePreview" && profileUsername && (
+                <div className="rounded-2xl border bg-card p-4 shadow-sm">
+                  <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary"><Instagram size={15} /> Prévia do perfil público</div>
+                  <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
+                    <img src={`https://unavatar.io/instagram/${encodeURIComponent(profileUsername)}`} alt={`Foto de perfil de @${profileUsername}`} className="h-16 w-16 rounded-full border object-cover" referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.style.visibility = "hidden"; }} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-bold">@{profileUsername}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Perfil público do Instagram</p>
+                      <a href={`https://www.instagram.com/${encodeURIComponent(profileUsername)}/`} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary">Abrir no Instagram <ArrowRight size={12} /></a>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">Esta prévia usa uma fonte externa e pode não carregar para perfis privados, indisponíveis ou com restrições. O Instagram não informa publicamente o estado interno da conta; esta tela não confirma se ela está suspensa, invadida ou em análise.</p>
+                  <button onClick={continueFromProfile} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3 text-sm font-extrabold text-white">Sim, é minha conta — continuar <ArrowRight size={16} /></button>
+                </div>
+              )}
               {stage === "followup" && followupQuestions[followupIndex] && (
                 <div className="rounded-2xl border bg-card p-4 shadow-sm">
                   <div className="mb-3 flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wide text-primary">Perguntas do seu caso</span><span className="text-xs text-muted-foreground">{followupIndex + 1} de {followupQuestions.length}</span></div>
@@ -291,7 +307,14 @@ function Index() {
                 </div>
               )}
               {stage === "offer0" && (
-                <OfferCard offer={offers[0]} onChoose={() => showCheckout(0)} />
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm">
+                    <p className="font-bold text-emerald-700">Diagnóstico gratuito concluído</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">A triagem não tem custo. Escolha abaixo o serviço que deseja contratar.</p>
+                  </div>
+                  <OfferCard offer={offers[0]} onChoose={() => showCheckout(0)} />
+                  <OfferCard offer={offers[1]} onChoose={() => showCheckout(1)} />
+                </div>
               )}
               {stage === "checkout" && (
                 <div className="rounded-2xl border bg-card p-4">
@@ -331,12 +354,12 @@ function Index() {
 function OfferCard({ offer, onChoose }: { offer: typeof offers[number]; onChoose: () => void }) {
   return (
     <div className="rounded-2xl border border-fuchsia-500/30 bg-card p-5 shadow-lg shadow-fuchsia-950/10">
-      <div className="flex items-center justify-between gap-3"><span className="text-xs font-extrabold uppercase tracking-wider text-fuchsia-600">Etapa inicial para seu caso</span><span className="rounded-full bg-fuchsia-500/10 px-2.5 py-1 text-xs font-bold text-fuchsia-600">Diagnóstico</span></div>
+      <div className="flex items-center justify-between gap-3"><span className="text-xs font-extrabold uppercase tracking-wider text-fuchsia-600">Serviço opcional</span><span className="rounded-full bg-fuchsia-500/10 px-2.5 py-1 text-xs font-bold text-fuchsia-600">InstaRecovery</span></div>
       <h3 className="mt-3 text-lg font-bold">{offer.title}</h3>
       <p className="mt-2 text-3xl font-extrabold">{offer.price}</p>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{offer.description}</p>
       <ul className="mt-4 space-y-2">{offer.bullets.map((item) => <li key={item} className="flex gap-2 text-xs leading-5"><Check size={14} className="mt-0.5 shrink-0 text-primary" />{item}</li>)}</ul>
-      <button onClick={onChoose} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-4 text-sm font-extrabold text-white shadow-lg shadow-fuchsia-900/20 transition hover:-translate-y-0.5 hover:brightness-110">Contratar etapa inicial <ArrowRight size={16} /></button>
+      <button onClick={onChoose} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-4 text-sm font-extrabold text-white shadow-lg shadow-fuchsia-900/20 transition hover:-translate-y-0.5 hover:brightness-110">Escolher este serviço <ArrowRight size={16} /></button>
     </div>
   );
 }
