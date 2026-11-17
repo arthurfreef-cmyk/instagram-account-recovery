@@ -162,7 +162,7 @@ function Index() {
     setProfileLoading(true);
     setStage("profilePreview");
     add("user", `@${normalized}`);
-    add("bot", "Vou consultar os dados públicos disponíveis para esse perfil. Isso pode levar alguns segundos.");
+    add("bot", "Vou localizar a foto pública associada a esse perfil. Isso pode levar alguns segundos.");
     try {
       const response = await fetch("/api/profile", {
         method: "POST",
@@ -335,7 +335,7 @@ function Index() {
                     </div>
                   </div>
                   {profileLoading && (
-                    <div className="mt-3 flex items-center gap-2 rounded-xl bg-primary/5 p-3 text-xs text-muted-foreground"><span className="h-2 w-2 animate-pulse rounded-full bg-primary" /> Consultando informações públicas do perfil...</div>
+                    <div className="mt-3 flex items-center gap-2 rounded-xl bg-primary/5 p-3 text-xs text-muted-foreground"><span className="h-2 w-2 animate-pulse rounded-full bg-primary" /> Localizando foto de perfil pública...</div>
                   )}
                   {!profileLoading && profileData && (
                     <>
@@ -365,7 +365,7 @@ function Index() {
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">Confira se o @ está correto. Perfis privados, indisponíveis ou temporariamente limitados podem não retornar informações.</p>
                     </div>
                   )}
-                  <p className="mt-3 text-[10px] leading-4 text-muted-foreground">Consulta de dados públicos por provedor externo. As informações podem estar incompletas ou desatualizadas e não revelam o status interno da conta nem confirmam invasão, suspensão ou possibilidade de recuperação.</p>
+                  <p className="mt-3 text-[10px] leading-4 text-muted-foreground">A foto é resolvida por um serviço externo e pode não estar disponível para todos os perfis. Esta consulta não confirma identidade, status interno, invasão, suspensão ou possibilidade de recuperação.</p>
                   <button onClick={continueFromProfile} disabled={profileLoading} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-50">Continuar com este perfil <ArrowRight size={16} /></button>
                 </div>
               )}
