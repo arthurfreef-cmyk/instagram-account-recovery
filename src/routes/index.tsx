@@ -64,7 +64,7 @@ function Index() {
   const [chatOpen, setChatOpen] = useState(false);
   const [stage, setStage] = useState<Stage>("welcome");
   const [messages, setMessages] = useState<Message[]>([
-    { from: "bot", text: "Oi! Seja bem-vindo(a) à InstaRecovery. 👋 Eu sou o assistente virtual e vou te ajudar a entender quais opções existem para o seu caso. Pode ficar à vontade para me contar o que aconteceu." },
+    { from: "bot", text: "Oi! Seja bem-vindo(a) à InstaRecovery. 👋 Sou o assistente virtual e vou orientar você no processo para tentar recuperar sua conta. Primeiro, quero entender o que aconteceu para indicar o caminho mais adequado." },
     { from: "bot", text: "Para eu te orientar melhor: o que aconteceu com sua conta?" },
   ]);
   const [username, setUsername] = useState("");
@@ -102,7 +102,7 @@ function Index() {
     setChatOpen(false);
     setStage("welcome");
     setMessages([
-      { from: "bot", text: "Olá! 👋 Sou o assistente virtual da InstaRecovery. Vou entender o que aconteceu com sua conta e apresentar as opções de serviço disponíveis." },
+      { from: "bot", text: "Olá! 👋 Sou o assistente virtual da InstaRecovery. Vou entender o que aconteceu e orientar você nos passos para buscar a recuperação da sua conta." },
       { from: "bot", text: "Para começar, me conta: qual situação você está enfrentando?" },
     ]);
     setUsername("");
@@ -126,8 +126,8 @@ function Index() {
         <div className="pointer-events-none absolute -bottom-40 -right-20 h-96 w-96 rounded-full bg-violet-600/20 blur-3xl" />
         <div className="relative mx-auto max-w-4xl">
           <span className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/30 bg-fuchsia-400/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-fuchsia-200"><Instagram size={14} /> Atendimento para contas com problemas de acesso</span>
-          <h1 className="mt-7 text-4xl font-black leading-[1.08] tracking-tight md:text-7xl">Perdeu sua conta do Instagram? <span className="text-fuchsia-300">Não desista antes de avaliar suas opções.</span></h1>
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/80 md:text-xl">Fotos, conversas, seguidores e anos de conteúdo podem estar ligados a esse perfil. Se você foi bloqueado, invadido ou perdeu o acesso, conte o que aconteceu. A InstaRecovery vai avaliar as alternativas disponíveis para tentar recuperar seu acesso.</p>
+          <h1 className="mt-7 text-4xl font-black leading-[1.08] tracking-tight md:text-7xl">Recupere sua conta do Instagram <span className="text-fuchsia-300">com a ajuda da InstaRecovery.</span></h1>
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/80 md:text-xl">Perder o acesso à sua conta não precisa ser o fim. Se você foi bloqueado, invadido ou perdeu o acesso, a InstaRecovery vai analisar seu caso e conduzir você pelos procedimentos adequados para buscar a recuperação do perfil.</p>
           <button onClick={() => setChatOpen(true)} className="mt-9 inline-flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-9 py-4 text-base font-extrabold text-white shadow-xl shadow-fuchsia-950/40 transition hover:-translate-y-1 hover:brightness-110 sm:w-auto">
             <MessageCircle size={20} /> COMEÇAR MINHA RECUPERAÇÃO
           </button>
