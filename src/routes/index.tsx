@@ -5,8 +5,8 @@ import { ArrowRight, Check, CheckCircle2, Instagram, MessageCircle, Send, Shield
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "InstaRecovery | Atendimento para recuperação de contas" },
-      { name: "description", content: "Conte seu problema à InstaRecovery e conheça as opções de serviço para seu caso." },
+      { title: "InstaRecovery | Vamos analisar sua conta" },
+      { name: "description", content: "Está sem acesso ao Instagram? Conte o que aconteceu e inicie uma análise independente do seu caso com a InstaRecovery." },
       { property: "og:title", content: "InstaRecovery | Recuperação de contas" },
       { property: "og:description", content: "Atendimento independente para casos de contas do Instagram bloqueadas, invadidas ou desativadas." },
       { property: "og:type", content: "website" },
@@ -64,8 +64,8 @@ function Index() {
   const [chatOpen, setChatOpen] = useState(false);
   const [stage, setStage] = useState<Stage>("welcome");
   const [messages, setMessages] = useState<Message[]>([
-    { from: "bot", text: "Olá! 👋 Sou o assistente virtual da InstaRecovery. Vou entender o que aconteceu com sua conta e apresentar as opções de serviço disponíveis." },
-    { from: "bot", text: "Para começar, me conta: qual situação você está enfrentando?" },
+    { from: "bot", text: "Olá! 👋 Sou o assistente virtual da InstaRecovery. Vou fazer algumas perguntas rápidas para entender o que aconteceu com sua conta e mostrar os serviços que podem ajudar." },
+    { from: "bot", text: "Vamos começar: qual dessas situações descreve melhor o seu problema?" },
   ]);
   const [username, setUsername] = useState("");
   const [paymentNotice, setPaymentNotice] = useState(false);
@@ -73,14 +73,14 @@ function Index() {
   const add = (from: Message["from"], text: string) => setMessages((current) => [...current, { from, text }]);
   const chooseIssue = (value: string) => {
     add("user", value);
-    add("bot", "Entendi. Obrigado por explicar. Qual é o @usuário da conta que precisa de ajuda? Não envie senha, códigos de login ou códigos de autenticação.");
+    add("bot", "Entendi. Vamos identificar o caminho mais adequado. Qual é o @usuário da conta? Por segurança, não envie senha, códigos de login ou códigos de autenticação.");
     setStage("username");
   };
   const submitUsername = () => {
     if (!username.trim()) return;
     add("user", username.startsWith("@") ? username : `@${username}`);
-    add("bot", "Certo! Com essas informações iniciais, podemos começar pela triagem do seu caso. A primeira etapa é o Diagnóstico e início do processo.");
-    add("bot", "Este serviço custa R$ 9,90 e inclui triagem do problema informado, identificação das opções aplicáveis e preparação dos primeiros passos.");
+    add("bot", "Obrigado! O próximo passo é iniciar a análise do seu relato. A primeira opção é o Diagnóstico e início do processo.");
+    add("bot", "Por R$ 9,90, você contrata a triagem do problema, a identificação das opções aplicáveis e a preparação dos primeiros passos do seu caso. Confira o escopo abaixo antes de decidir.");
     setStage("offer0");
   };
   const showCheckout = (offerIndex: number) => {
@@ -111,35 +111,35 @@ function Index() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <header className="border-b bg-card/95 px-5 py-4">
+      <header className="border-b border-white/10 bg-[#090711] px-5 py-4 text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <a href="/" className="flex items-center gap-3" aria-label="InstaRecovery">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-hero text-sm font-extrabold text-white shadow-soft">IR</span>
-            <span className="text-xl font-bold tracking-tight">Insta<span className="text-primary">Recovery</span></span>
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-violet-600 text-sm font-extrabold text-white shadow-lg shadow-fuchsia-500/25">IR</span>
+            <span className="text-xl font-bold tracking-tight text-white">Insta<span className="text-fuchsia-400">Recovery</span></span>
           </a>
-          <span className="hidden text-xs text-muted-foreground sm:block">Atendimento independente</span>
+          <span className="hidden rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-white/70 sm:block">ATENDIMENTO DIGITAL</span>
         </div>
       </header>
 
-      <section className="relative overflow-hidden bg-hero px-5 py-24 text-center text-white md:py-32">
-        <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full border-[42px] border-white/10" />
-        <div className="pointer-events-none absolute -bottom-40 -right-20 h-96 w-96 rounded-full border-[48px] border-white/10" />
+      <section className="relative overflow-hidden bg-[#090711] px-5 py-24 text-center text-white md:py-32">
+        <div className="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-fuchsia-600/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-40 -right-20 h-96 w-96 rounded-full bg-violet-600/20 blur-3xl" />
         <div className="relative mx-auto max-w-4xl">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest"><Instagram size={14} /> Serviço de recuperação de contas</span>
-          <h1 className="mt-7 text-4xl font-extrabold leading-tight md:text-6xl">Problemas para acessar sua conta do Instagram?</h1>
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/90 md:text-xl">Conte o que aconteceu. Nossa equipe pode analisar seu caso e orientar as etapas de recuperação disponíveis para sua situação.</p>
-          <button onClick={() => setChatOpen(true)} className="mt-9 inline-flex w-full items-center justify-center gap-3 rounded-xl bg-white px-8 py-4 text-base font-bold text-slate-900 shadow-xl transition hover:-translate-y-0.5 sm:w-auto">
-            <MessageCircle size={20} /> Iniciar atendimento
+          <span className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/30 bg-fuchsia-400/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-fuchsia-200"><Instagram size={14} /> Atendimento para contas com problemas de acesso</span>
+          <h1 className="mt-7 text-4xl font-black leading-[1.08] tracking-tight md:text-7xl">Sua conta saiu do ar. <span className="text-fuchsia-300">Vamos analisar o que pode ser feito.</span></h1>
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/80 md:text-xl">Conta bloqueada, desativada ou invadida? Explique sua situação em poucos passos e descubra quais caminhos de recuperação podem se aplicar ao seu caso.</p>
+          <button onClick={() => setChatOpen(true)} className="mt-9 inline-flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-9 py-4 text-base font-extrabold text-white shadow-xl shadow-fuchsia-950/40 transition hover:-translate-y-1 hover:brightness-110 sm:w-auto">
+            <MessageCircle size={20} /> QUERO ANALISAR MINHA CONTA
           </button>
-          <p className="mt-5 text-xs text-white/75">Você será atendido pelo assistente virtual da InstaRecovery.</p>
+          <p className="mt-5 text-xs text-white/60">Atendimento inicial rápido • Sem compartilhar senha ou códigos</p>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-5xl gap-6 px-5 py-14 md:grid-cols-3">
+      <section className="mx-auto grid max-w-5xl gap-5 px-5 py-14 md:grid-cols-3">
         {[
-          ["Atendimento inicial", "Conte o que aconteceu com sua conta e informe apenas os dados básicos necessários."],
-          ["Análise do seu caso", "Identificamos quais caminhos e serviços podem ser aplicáveis à situação relatada."],
-          ["Próximas etapas", "Você conhece cada serviço e seu preço antes de decidir se deseja contratar."],
+          ["Conte o que aconteceu", "Selecione o problema e informe o @ da conta. Não precisamos da sua senha."],
+          ["Entenda suas opções", "A análise inicial ajuda a identificar quais procedimentos podem fazer sentido para o seu caso."],
+          ["Decida com clareza", "Veja o serviço, o que está incluído e o preço antes de contratar."],
         ].map(([title, desc], i) => (
           <div key={title} className="rounded-2xl border bg-card p-6">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary">0{i + 1}</span>
@@ -149,16 +149,16 @@ function Index() {
         ))}
       </section>
 
-      <section className="border-y bg-muted/40 px-5 py-12">
+      <section className="border-y bg-[#100d1b] px-5 py-14 text-white">
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-3 text-center">
-          <ShieldCheck className="text-primary" size={30} />
-          <h2 className="text-xl font-bold">Sua segurança vem primeiro</h2>
-          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">A InstaRecovery é um serviço independente, sem vínculo com a Meta ou o Instagram. Nunca solicitamos senha, códigos de autenticação, cookies ou códigos de recuperação. A decisão de reativar ou desbloquear uma conta pertence à plataforma e não pode ser garantida por terceiros.</p>
+          <ShieldCheck className="text-fuchsia-400" size={30} />
+          <h2 className="text-xl font-extrabold">Atendimento transparente. Seus dados protegidos.</h2>
+          <p className="max-w-2xl text-sm leading-6 text-white/65">A InstaRecovery é independente e não representa a Meta ou o Instagram. Nunca envie senha, códigos de autenticação ou cookies. A plataforma decide sobre desbloqueios e reativações; por isso, nenhum terceiro pode garantir esse resultado.</p>
         </div>
       </section>
 
-      <footer className="px-5 py-8 text-center text-xs leading-6 text-muted-foreground">
-        <p className="font-semibold text-foreground">InstaRecovery</p>
+      <footer className="bg-[#090711] px-5 py-8 text-center text-xs leading-6 text-white/45">
+        <p className="font-semibold text-white">InstaRecovery</p>
         <p>Serviço independente de assistência para recuperação e segurança de contas.</p>
         <p>Instagram e Meta são marcas de seus respectivos proprietários.</p>
       </footer>
@@ -166,10 +166,10 @@ function Index() {
       {chatOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-label="Atendimento InstaRecovery">
           <div className="flex h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border bg-card shadow-2xl sm:h-[min(760px,90dvh)] sm:rounded-2xl">
-            <div className="flex items-center justify-between bg-hero px-4 py-4 text-white">
+            <div className="flex items-center justify-between bg-[#100d1b] px-4 py-4 text-white">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15"><MessageCircle size={20} /></div>
-                <div><p className="font-bold">InstaRecovery</p><p className="text-xs text-white/75">Assistente virtual · atendimento online</p></div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-600"><MessageCircle size={20} /></div>
+                <div><p className="font-bold">InstaRecovery</p><p className="text-xs text-white/65">Assistente virtual · atendimento</p></div>
               </div>
               <button onClick={resetChat} className="rounded-full p-2 transition hover:bg-white/15" aria-label="Fechar atendimento"><X size={20} /></button>
             </div>
@@ -231,13 +231,13 @@ function Index() {
 
 function OfferCard({ offer, onChoose }: { offer: typeof offers[number]; onChoose: () => void }) {
   return (
-    <div className="rounded-2xl border border-primary/30 bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-3"><span className="text-xs font-bold uppercase tracking-wider text-primary">Serviço disponível</span><span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">Oferta</span></div>
+    <div className="rounded-2xl border border-fuchsia-500/30 bg-card p-5 shadow-lg shadow-fuchsia-950/10">
+      <div className="flex items-center justify-between gap-3"><span className="text-xs font-extrabold uppercase tracking-wider text-fuchsia-600">Primeira etapa do atendimento</span><span className="rounded-full bg-fuchsia-500/10 px-2.5 py-1 text-xs font-bold text-fuchsia-600">Comece por aqui</span></div>
       <h3 className="mt-3 text-lg font-bold">{offer.title}</h3>
       <p className="mt-2 text-3xl font-extrabold">{offer.price}</p>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{offer.description}</p>
       <ul className="mt-4 space-y-2">{offer.bullets.map((item) => <li key={item} className="flex gap-2 text-xs leading-5"><Check size={14} className="mt-0.5 shrink-0 text-primary" />{item}</li>)}</ul>
-      <button onClick={onChoose} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground transition hover:opacity-90">Continuar para pagamento <ArrowRight size={16} /></button>
+      <button onClick={onChoose} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-4 text-sm font-extrabold text-white shadow-lg shadow-fuchsia-900/20 transition hover:-translate-y-0.5 hover:brightness-110">Quero iniciar meu diagnóstico <ArrowRight size={16} /></button>
     </div>
   );
 }
