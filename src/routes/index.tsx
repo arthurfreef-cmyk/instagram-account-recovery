@@ -5,8 +5,8 @@ import { ArrowRight, Check, CheckCircle2, Instagram, MessageCircle, Send, Shield
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "InstaRecovery | Vamos analisar sua conta" },
-      { name: "description", content: "Está sem acesso ao Instagram? Conte o que aconteceu e inicie uma análise independente do seu caso com a InstaRecovery." },
+      { title: "InstaRecovery | Ajuda para recuperar sua conta" },
+      { name: "description", content: "Perdeu o acesso à sua conta do Instagram? Conte o que aconteceu e veja como a InstaRecovery pode ajudar a analisar seu caso e buscar caminhos de recuperação." },
       { property: "og:title", content: "InstaRecovery | Recuperação de contas" },
       { property: "og:description", content: "Atendimento independente para casos de contas do Instagram bloqueadas, invadidas ou desativadas." },
       { property: "og:type", content: "website" },
@@ -64,8 +64,8 @@ function Index() {
   const [chatOpen, setChatOpen] = useState(false);
   const [stage, setStage] = useState<Stage>("welcome");
   const [messages, setMessages] = useState<Message[]>([
-    { from: "bot", text: "Olá! 👋 Sou o assistente virtual da InstaRecovery. Vou fazer algumas perguntas rápidas para entender o que aconteceu com sua conta e mostrar os serviços que podem ajudar." },
-    { from: "bot", text: "Vamos começar: qual dessas situações descreve melhor o seu problema?" },
+    { from: "bot", text: "Oi! Seja bem-vindo(a) à InstaRecovery. 👋 Eu sou o assistente virtual e vou te ajudar a entender quais opções existem para o seu caso. Pode ficar à vontade para me contar o que aconteceu." },
+    { from: "bot", text: "Para eu te orientar melhor: o que aconteceu com sua conta?" },
   ]);
   const [username, setUsername] = useState("");
   const [paymentNotice, setPaymentNotice] = useState(false);
@@ -73,14 +73,14 @@ function Index() {
   const add = (from: Message["from"], text: string) => setMessages((current) => [...current, { from, text }]);
   const chooseIssue = (value: string) => {
     add("user", value);
-    add("bot", "Entendi. Vamos identificar o caminho mais adequado. Qual é o @usuário da conta? Por segurança, não envie senha, códigos de login ou códigos de autenticação.");
+    add("bot", "Entendi. Imagino como isso pode ser frustrante, principalmente se você tinha fotos, contatos ou trabalho nesse perfil. Vamos por partes: qual é o @ da conta? Não envie senha nem códigos de acesso.");
     setStage("username");
   };
   const submitUsername = () => {
     if (!username.trim()) return;
     add("user", username.startsWith("@") ? username : `@${username}`);
-    add("bot", "Obrigado! O próximo passo é iniciar a análise do seu relato. A primeira opção é o Diagnóstico e início do processo.");
-    add("bot", "Por R$ 9,90, você contrata a triagem do problema, a identificação das opções aplicáveis e a preparação dos primeiros passos do seu caso. Confira o escopo abaixo antes de decidir.");
+    add("bot", "Obrigado por passar essas informações. O primeiro passo é entender melhor o tipo de problema e verificar quais alternativas podem ser tentadas. Vou te mostrar como funciona a etapa inicial.");
+    add("bot", "A etapa inicial custa R$ 9,90. Ela inclui a análise das informações que você forneceu, a identificação dos caminhos possíveis e a preparação dos primeiros passos aplicáveis. Veja exatamente o que está incluído antes de decidir.");
     setStage("offer0");
   };
   const showCheckout = (offerIndex: number) => {
@@ -126,20 +126,20 @@ function Index() {
         <div className="pointer-events-none absolute -bottom-40 -right-20 h-96 w-96 rounded-full bg-violet-600/20 blur-3xl" />
         <div className="relative mx-auto max-w-4xl">
           <span className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/30 bg-fuchsia-400/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-fuchsia-200"><Instagram size={14} /> Atendimento para contas com problemas de acesso</span>
-          <h1 className="mt-7 text-4xl font-black leading-[1.08] tracking-tight md:text-7xl">Sua conta saiu do ar. <span className="text-fuchsia-300">Vamos analisar o que pode ser feito.</span></h1>
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/80 md:text-xl">Conta bloqueada, desativada ou invadida? Explique sua situação em poucos passos e descubra quais caminhos de recuperação podem se aplicar ao seu caso.</p>
+          <h1 className="mt-7 text-4xl font-black leading-[1.08] tracking-tight md:text-7xl">Perdeu sua conta do Instagram? <span className="text-fuchsia-300">Não desista antes de avaliar suas opções.</span></h1>
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/80 md:text-xl">Fotos, conversas, seguidores e anos de conteúdo podem estar ligados a esse perfil. Se você foi bloqueado, invadido ou perdeu o acesso, conte o que aconteceu. A InstaRecovery vai avaliar as alternativas disponíveis para tentar recuperar seu acesso.</p>
           <button onClick={() => setChatOpen(true)} className="mt-9 inline-flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-9 py-4 text-base font-extrabold text-white shadow-xl shadow-fuchsia-950/40 transition hover:-translate-y-1 hover:brightness-110 sm:w-auto">
-            <MessageCircle size={20} /> QUERO ANALISAR MINHA CONTA
+            <MessageCircle size={20} /> COMEÇAR MINHA RECUPERAÇÃO
           </button>
-          <p className="mt-5 text-xs text-white/60">Atendimento inicial rápido • Sem compartilhar senha ou códigos</p>
+          <p className="mt-5 text-xs text-white/60">Responda algumas perguntas • Veja as opções para o seu caso</p>
         </div>
       </section>
 
       <section className="mx-auto grid max-w-5xl gap-5 px-5 py-14 md:grid-cols-3">
         {[
-          ["Conte o que aconteceu", "Selecione o problema e informe o @ da conta. Não precisamos da sua senha."],
-          ["Entenda suas opções", "A análise inicial ajuda a identificar quais procedimentos podem fazer sentido para o seu caso."],
-          ["Decida com clareza", "Veja o serviço, o que está incluído e o preço antes de contratar."],
+          ["Conte seu problema", "Explique se a conta foi invadida, bloqueada ou desativada."],
+          ["Avalie os caminhos possíveis", "Cada situação é diferente. Identificamos quais procedimentos podem ser aplicáveis."],
+          ["Escolha como prosseguir", "Você recebe o escopo e o preço antes de contratar qualquer serviço."],
         ].map(([title, desc], i) => (
           <div key={title} className="rounded-2xl border bg-card p-6">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary">0{i + 1}</span>
@@ -169,12 +169,12 @@ function Index() {
             <div className="flex items-center justify-between bg-[#100d1b] px-4 py-4 text-white">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-600"><MessageCircle size={20} /></div>
-                <div><p className="font-bold">InstaRecovery</p><p className="text-xs text-white/65">Assistente virtual · atendimento</p></div>
+                <div><p className="font-bold">Atendimento InstaRecovery</p><p className="text-xs text-white/65">Assistente virtual · respondendo agora</p></div>
               </div>
               <button onClick={resetChat} className="rounded-full p-2 transition hover:bg-white/15" aria-label="Fechar atendimento"><X size={20} /></button>
             </div>
             <div className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-4">
-              <div className="mx-auto w-fit rounded-full bg-background px-3 py-1 text-[10px] text-muted-foreground">Conversa com assistente virtual</div>
+              <div className="mx-auto w-fit rounded-full bg-background px-3 py-1 text-[10px] text-muted-foreground">Assistente virtual InstaRecovery • online</div>
               {messages.map((message, index) => (
                 <div key={index} className={`flex ${message.from === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.from === "user" ? "rounded-br-sm bg-primary text-primary-foreground" : "rounded-bl-sm border bg-card"}`}>{message.text}</div>
@@ -232,12 +232,12 @@ function Index() {
 function OfferCard({ offer, onChoose }: { offer: typeof offers[number]; onChoose: () => void }) {
   return (
     <div className="rounded-2xl border border-fuchsia-500/30 bg-card p-5 shadow-lg shadow-fuchsia-950/10">
-      <div className="flex items-center justify-between gap-3"><span className="text-xs font-extrabold uppercase tracking-wider text-fuchsia-600">Primeira etapa do atendimento</span><span className="rounded-full bg-fuchsia-500/10 px-2.5 py-1 text-xs font-bold text-fuchsia-600">Comece por aqui</span></div>
+      <div className="flex items-center justify-between gap-3"><span className="text-xs font-extrabold uppercase tracking-wider text-fuchsia-600">Etapa inicial para seu caso</span><span className="rounded-full bg-fuchsia-500/10 px-2.5 py-1 text-xs font-bold text-fuchsia-600">Diagnóstico</span></div>
       <h3 className="mt-3 text-lg font-bold">{offer.title}</h3>
       <p className="mt-2 text-3xl font-extrabold">{offer.price}</p>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{offer.description}</p>
       <ul className="mt-4 space-y-2">{offer.bullets.map((item) => <li key={item} className="flex gap-2 text-xs leading-5"><Check size={14} className="mt-0.5 shrink-0 text-primary" />{item}</li>)}</ul>
-      <button onClick={onChoose} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-4 text-sm font-extrabold text-white shadow-lg shadow-fuchsia-900/20 transition hover:-translate-y-0.5 hover:brightness-110">Quero iniciar meu diagnóstico <ArrowRight size={16} /></button>
+      <button onClick={onChoose} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-4 text-sm font-extrabold text-white shadow-lg shadow-fuchsia-900/20 transition hover:-translate-y-0.5 hover:brightness-110">Contratar etapa inicial <ArrowRight size={16} /></button>
     </div>
   );
 }
