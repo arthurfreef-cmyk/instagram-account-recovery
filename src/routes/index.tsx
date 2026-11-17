@@ -19,6 +19,19 @@ type Message = { from: "bot" | "user"; text: string };
 type Stage = "intro" | "welcome" | "username" | "profilePreview" | "followup" | "typing" | "analyzing" | "offer0" | "serviceDetails" | "checkout" | "upsell1" | "upsell2" | "premium" | "done";
 type FollowupQuestion = { prompt: string; options: string[] };
 
+type InstagramProfile = {
+  username: string;
+  fullName: string | null;
+  biography: string | null;
+  profilePicUrl: string | null;
+  followers: number | null;
+  following: number | null;
+  posts: number | null;
+  verified: boolean | null;
+  isPrivate: boolean | null;
+  externalUrl: string | null;
+};
+
 const followupsByIssue: Record<string, FollowupQuestion[]> = {
   "Minha conta foi desativada": [
     { prompt: "Quando você tenta entrar, o que aparece?", options: ["Aviso de conta desativada", "Aviso de violação das diretrizes", "Não aparece uma mensagem clara", "Não consigo lembrar"] },
@@ -90,6 +103,9 @@ function Index() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [username, setUsername] = useState("");
   const [profileUsername, setProfileUsername] = useState("");
+  const [profileData, setProfileData] = useState<InstagramProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState("");
   const [followupQuestions, setFollowupQuestions] = useState<FollowupQuestion[]>([]);
   const [followupIndex, setFollowupIndex] = useState(0);
   const [paymentNotice, setPaymentNotice] = useState(false);
@@ -137,12 +153,33 @@ function Index() {
     setFollowupIndex(0);
     askNext("Entendi. Vou seguir perguntas específicas para esse tipo de situação. Qual é o @ da conta? Não envie senha, códigos ou dados de autenticação.", "username");
   };
-  const submitUsername = () => {
+  const submitUsername = async () => {
     const normalized = username.trim().replace(/^@/, "");
-    if (!/^[a-zA-Z0-9._]{1,30}$/.test(normalized)) return;
+    if (!/^[a-zA-Z0-9._]{1,30}$/.test(normalized) || profileLoading) return;
     setProfileUsername(normalized);
+    setProfileData(null);
+    setProfileError("");
+    setProfileLoading(true);
+    setStage("profilePreview");
     add("user", `@${normalized}`);
-    askNext("Encontrei o endereço público do perfil. Confira se este é o perfil correto antes de continuarmos.", "profilePreview");
+    add("bot", "Vou consultar os dados públicos disponíveis para esse perfil. Isso pode levar alguns segundos.");
+    try {
+      const response = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: normalized }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setProfileError(result.error || "Não foi possível consultar esse perfil agora.");
+      } else {
+        setProfileData(result.profile as InstagramProfile);
+      }
+    } catch {
+      setProfileError("Não foi possível concluir a consulta. Verifique sua conexão e tente novamente.");
+    } finally {
+      setProfileLoading(false);
+    }
   };
   const continueFromProfile = () => {
     const firstQuestion = followupQuestions[0];
@@ -190,6 +227,9 @@ function Index() {
     setMessages([]);
     setUsername("");
     setProfileUsername("");
+    setProfileData(null);
+    setProfileLoading(false);
+    setProfileError("");
     setFollowupQuestions([]);
     setFollowupIndex(0);
     setPaymentNotice(false);
@@ -281,17 +321,52 @@ function Index() {
               )}
               {stage === "profilePreview" && profileUsername && (
                 <div className="rounded-2xl border bg-card p-4 shadow-sm">
-                  <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary"><Instagram size={15} /> Prévia do perfil público</div>
+                  <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary"><Instagram size={15} /> Consulta do perfil</div>
                   <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
-                    <img src={`https://unavatar.io/instagram/${encodeURIComponent(profileUsername)}`} alt={`Foto de perfil de @${profileUsername}`} className="h-16 w-16 rounded-full border object-cover" referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.style.visibility = "hidden"; }} />
+                    {profileData?.profilePicUrl ? (
+                      <img src={profileData.profilePicUrl} alt={`Foto de perfil de @${profileUsername}`} className="h-16 w-16 shrink-0 rounded-full border object-cover" referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                    ) : (
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border bg-background text-xl font-bold text-primary"><Instagram size={24} /></div>
+                    )}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-bold">@{profileUsername}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Perfil público do Instagram</p>
+                      <p className="truncate font-bold">{profileData?.fullName || `@${profileUsername}`}{profileData?.verified && <span className="ml-1 text-sky-500" title="Perfil verificado">✓</span>}</p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">@{profileData?.username || profileUsername}</p>
                       <a href={`https://www.instagram.com/${encodeURIComponent(profileUsername)}/`} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary">Abrir no Instagram <ArrowRight size={12} /></a>
                     </div>
                   </div>
-                  <p className="mt-3 text-xs leading-5 text-muted-foreground">Esta prévia usa uma fonte externa e pode não carregar para perfis privados, indisponíveis ou com restrições. O Instagram não informa publicamente o estado interno da conta; esta tela não confirma se ela está suspensa, invadida ou em análise.</p>
-                  <button onClick={continueFromProfile} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3 text-sm font-extrabold text-white">Sim, é minha conta — continuar <ArrowRight size={16} /></button>
+                  {profileLoading && (
+                    <div className="mt-3 flex items-center gap-2 rounded-xl bg-primary/5 p-3 text-xs text-muted-foreground"><span className="h-2 w-2 animate-pulse rounded-full bg-primary" /> Consultando informações públicas do perfil...</div>
+                  )}
+                  {!profileLoading && profileData && (
+                    <>
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        {[
+                          ["Publicações", profileData.posts],
+                          ["Seguidores", profileData.followers],
+                          ["Seguindo", profileData.following],
+                        ].map(([label, value]) => (
+                          <div key={String(label)} className="rounded-xl bg-muted/50 px-2 py-3 text-center">
+                            <p className="text-sm font-extrabold">{typeof value === "number" ? value.toLocaleString("pt-BR") : "—"}</p>
+                            <p className="mt-1 text-[10px] text-muted-foreground">{label}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {profileData.biography && <p className="mt-3 whitespace-pre-wrap break-words text-xs leading-5 text-foreground/80">{profileData.biography}</p>}
+                      {profileData.externalUrl && <a href={profileData.externalUrl} target="_blank" rel="noreferrer" className="mt-2 block truncate text-xs font-medium text-primary">{profileData.externalUrl}</a>}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {profileData.isPrivate !== null && <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] text-muted-foreground">{profileData.isPrivate ? "Perfil privado" : "Perfil público"}</span>}
+                        {profileData.verified && <span className="rounded-full bg-sky-500/10 px-2.5 py-1 text-[10px] font-semibold text-sky-600">Verificado</span>}
+                      </div>
+                    </>
+                  )}
+                  {!profileLoading && !profileData && (
+                    <div className="mt-3 rounded-xl border border-amber-500/25 bg-amber-500/5 p-3">
+                      <p className="text-xs font-semibold text-foreground">{profileError || "Não foram retornados dados públicos para esse perfil."}</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">Confira se o @ está correto. Perfis privados, indisponíveis ou temporariamente limitados podem não retornar informações.</p>
+                    </div>
+                  )}
+                  <p className="mt-3 text-[10px] leading-4 text-muted-foreground">Consulta de dados públicos por provedor externo. As informações podem estar incompletas ou desatualizadas e não revelam o status interno da conta nem confirmam invasão, suspensão ou possibilidade de recuperação.</p>
+                  <button onClick={continueFromProfile} disabled={profileLoading} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-50">Continuar com este perfil <ArrowRight size={16} /></button>
                 </div>
               )}
               {stage === "followup" && followupQuestions[followupIndex] && (
